@@ -1,5 +1,6 @@
 # discord-clone
 
+NodeJS, Socket.io, MongoDB
 ...
 
 ![resim](https://github.com/user-attachments/assets/39c63ea1-ad3e-417c-9693-a3d08d314af8)
