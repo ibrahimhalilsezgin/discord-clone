@@ -34,7 +34,11 @@ const userSchema = new Schema({
     guilds: [{
         type:Types.ObjectId,
         ref: 'guild'
-    }]
+    }],
+    lastHeartbeat: {
+        type:Date,
+        default: null
+    }
     
 })
 

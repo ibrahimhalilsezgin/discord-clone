@@ -19,14 +19,10 @@
 
         <!-- Chat Alanı -->
         <div id="chat-area" class="flex flex-col flex-grow bg-gray-800">
-            <div id="chat-header" class="flex items-center bg-gray-900 p-2 border-b border-gray-700">
-            </div>
-            <div id="messages" class="flex-grow p-2 overflow-y-auto">
-                <!-- Diğer mesajlar buraya eklenebilir -->
-            </div>
+            <div id="chat-header" class="flex items-center bg-gray-900 p-2 border-b border-gray-700"></div>
+            <div id="messages" class="flex-grow p-2 overflow-y-auto"></div>
             <div id="message-input" class="flex p-2 bg-gray-700">
-                <input id="input-field" type="text" class="flex-grow p-2 bg-gray-800 text-white rounded mr-2" placeholder="Mesaj yaz...">
-                <button id="send-btn" class="bg-blue-600 p-2 rounded hover:bg-blue-500 transition duration-300">Gönder</button>
+                <input id="input-field" type="text" class="flex-grow p-2 bg-gray-800 text-white rounded mr-2 disabled:text-slate-500" placeholder="Bir Sunucuya Gir" disabled>
             </div>
         </div>
 
@@ -39,9 +35,45 @@
     <%- include("./layouts/settingsModal.ejs") %>
 </body>
 </html>
-
-
+<%- include("./components/heartbeat.ejs") %>
 <script>
+    function fetchUserStatus(userElement) {
+        const userId = userElement.getAttribute('data-id');
+
+        fetch(`/status/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const statusElement = userElement.querySelector('.status');
+                const userStatusDiv = userElement.querySelector('.user-status');
+
+                if (data.status) {
+                    if (data.status === 'active') {
+                        userStatusDiv.classList.remove('user-status-offline');
+                        userStatusDiv.classList.add('user-status-online');  // Offline sınıfını kaldır
+                    } else {
+                        userStatusDiv.classList.add('user-status-offline'); // Offline sınıfını ekle
+                        
+                    }
+                } else {
+                    userStatusDiv.classList.remove('user-status-online'); // Offline sınıfını ekle
+                    userStatusDiv.classList.add('user-status-offline'); // Offline sınıfını ekle
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+            });
+    }
+
+    // İlk durum kontrolü ve ardından her 5 saniyede bir kontrol et
+    const userElements = document.querySelectorAll('.user');
+    userElements.forEach(userElement => {
+        fetchUserStatus(userElement); // İlk durumu kontrol et
+        setInterval(() => fetchUserStatus(userElement), 5000); // 5 saniyede bir durumu kontrol et
+    });
+</script>
+<script>
+    
+    
     function openSettingsModal() {
         document.getElementById('settingsModal').classList.remove('hidden')
     }

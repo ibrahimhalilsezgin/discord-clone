@@ -11,35 +11,47 @@
     <!-- Sol Sidebar -->
 <%- include("./layouts/sidebar.ejs") %>
 
-    <div id="main" class="flex flex-grow h-screen flex-col md:flex-row">
-        <!-- Kanal Listesi -->
-        <div id="channel-bar" class="bg-gray-900 w-full md:w-60 p-5">
-            <%- include("./components/left-bottom.ejs") %>
+<div id="main" class="flex flex-grow h-screen">
+    <!-- Kanal Listesi -->
+     
+    <div id="channel-bar" class="bg-gray-900 w-60 p-5">
+        <%- include("./components/left-bottom.ejs") %>
 
-            <h2 class="text-center"><%- guild.name %></h2>
-            <h4 class="text-center"><%- guild.inviteCode ? guild.inviteCode : 'Sunucunun Davet Kodu Yok.' %></h4>
+        <h2 style="text-align: center;"><%- guild.name %></h2>
+        <h4 style="text-align: center;"><%- guild.inviteCode ? guild.inviteCode : 'Sunucunun Davet Kodu Yok.' %></h4>
 
-                <label class="text-2xl float-right cursor-pointer" onclick="openCreateChannelModal()" title="Kanal Oluştur">+</label>
+        <% if(guild.ownerID === user.id) { %> 
+            <label class="text-2xl float-right cursor-pointer" onclick="openCreateChannelModal()" title="Kanal Oluştur">+</label>
+        <% } %>
 
-            <div class="space-y-2 mt-10">
-                <% channels.forEach(channel => { %> 
-                    <% if(channel.type == 0) { %> 
-                        <div class="channel bg-gray-700 hover:bg-gray-600 rounded-md p-2 cursor-pointer transition duration-200" onclick="location.assign('/channels/<%- guild.id %>/<%- channel.id %>')">
-                            <span class="text-white">✍ <%- channel.name %></span>
-                        </div>                
+
+        <div class="space-y-2 mt-10">
+            <% channels.forEach(channel => { %> 
+                <% if(channel.type == 0) { %> 
+                    <div class="channel bg-gray-700 hover:bg-gray-600 rounded-md p-2 cursor-pointer transition duration-200" onclick="location.assign('/channels/<%- guild.id %>/<%- channel.id %>')">
+                        <span class="text-white">✍ <%- channel.name %></span>
+                    </div>                
                     <% } %> 
-                    <% if(channel.type == 1) { %>
-                        <div class="channel bg-gray-700 hover:bg-gray-600 rounded-md p-2 cursor-pointer transition duration-200" onclick="joinVoiceChannel('<%- channel.id %>')" onmouseover="showVoiceUsers('<%- channel.id %>')">
-                            <span class="text-white">🔉 <%- channel.name %>
-                                <ul id="voiceUsers-<%- channel.id %>"></ul>
-                            </span>
-                        </div>
-                        <audio id="localAudio" autoplay muted></audio>
-                        <audio id="remoteAudio" autoplay></audio>
-                    <% } %>
-                <% }); %> 
-            </div>
+                <% if(channel.type == 1) { %>
+                <div class="channel bg-gray-700 hover:bg-gray-600 rounded-md p-2 cursor-pointer transition duration-200" onclick="joinVoiceChannel('<%- channel.id %>')" onmouseover="showVoiceUsers('<%- channel.id %>')">
+
+                    <span class="text-white">🔉 <%- channel.name %>
+                        <ul id="voiceUsers-<%- channel.id %>">
+
+                        </ul>
+                    </span>
+                </div>
+                <audio id="localAudio" autoplay muted></audio>
+                <audio id="remoteAudio" autoplay></audio>
+                <audio id="joinEffect" src="/join.mp3"></audio>
+                <audio id="leaveEffect" src="/leave.mp3"></audio>
+
+            <% } %>
+            <% }); %> 
         </div>
+        
+  </div>
+
 
         <!-- Chat Alanı -->
         <div id="chat-area" class="flex flex-col flex-grow bg-gray-800">
@@ -51,14 +63,16 @@
         </div>
 
         <!-- Sağ Kullanıcı Listesi -->
-        <div id="user-list" class="bg-gray-900 w-full md:w-60 p-5 border-l border-gray-700">
+        <div id="user-list" class="bg-gray-900 w-60 p-5 border-l border-gray-700">
             <% guild.members.forEach(x => { %>
-                <div class="user">
-                    <div class="user-status"></div>
+                <div class="user" data-id="<%- x.id %>"> <!-- Kullanıcı ID'sini sakla -->
+                    <div class="user-status">
+                        <span class="status"></span> <!-- Kullanıcı durumunu burada göstereceğiz -->
+                    </div>
+                    <img src="<%- x.profilePhoto %>" alt="<%- x.displayName %>" class="rounded-full h-8 w-8">
                     <span><%- x.username %></span>
                 </div>
             <% }); %>
-        </div>
     </div>
     <audio id="localAudio" autoplay muted></audio>
     <audio id="remoteAudio" autoplay></audio>
@@ -66,26 +80,69 @@
     <audio id="leaveEffect" src="/leave.mp3"></audio>
 
 <%- include("./layouts/createChannelModal.ejs") %>
+<%- include("./components/heartbeat.ejs") %>
 
 </body>
 </html>
+<script>
+    function fetchUserStatus(userElement) {
+        const userId = userElement.getAttribute('data-id');
 
+        fetch(`/status/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const statusElement = userElement.querySelector('.status');
+                const userStatusDiv = userElement.querySelector('.user-status');
+
+                if (data.status) {
+                    if (data.status === 'active') {
+                        userStatusDiv.classList.remove('user-status-offline');
+                        userStatusDiv.classList.add('user-status-online');  // Offline sınıfını kaldır
+                    } else {
+                        userStatusDiv.classList.add('user-status-offline'); // Offline sınıfını ekle
+                        
+                    }
+                } else {
+                    userStatusDiv.classList.remove('user-status-online'); // Offline sınıfını ekle
+                    userStatusDiv.classList.add('user-status-offline'); // Offline sınıfını ekle
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+            });
+    }
+
+    // İlk durum kontrolü ve ardından her 5 saniyede bir kontrol et
+    const userElements = document.querySelectorAll('.user');
+    userElements.forEach(userElement => {
+        fetchUserStatus(userElement); // İlk durumu kontrol et
+        setInterval(() => fetchUserStatus(userElement), 5000); // 5 saniyede bir durumu kontrol et
+    });
+</script>
 <style>
     .user {
-        padding: 10px;
-        margin-bottom: 10px;
-        background-color: #40444b;
-        border-radius: 5px;
-        display: flex;
-        align-items: center;
-    }
-    .user-status {
-        width: 10px;
-        height: 10px;
-        background-color: #43b581;
-        border-radius: 50%;
-        margin-right: 10px;
-    }
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #40444b;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.user-status-online {
+    width: 10px;
+    height: 10px;
+    background-color: #43b581;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+.user-status-offline {
+    width: 10px;
+    height: 10px;
+    background-color: #222423;
+    border-radius: 50%;
+    margin-right: 10px;
+}
 </style>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>

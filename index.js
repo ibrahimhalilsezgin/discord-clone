@@ -3,7 +3,6 @@ import session from "express-session";
 import {createServer} from "node:http"
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
-import morgan from "morgan";
 import flash from "connect-flash";
 
 import authrouter from "./router/auth.js";
@@ -36,7 +35,6 @@ app.use(session({ secret:'omg', saveUninitialized: true, resave: true }))
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.static('public'))
-app.use(morgan('dev'))
 app.use(bodyParser.urlencoded({ extended: false, limit:'20mb' }));
 app.use(bodyParser.json({ limit:'20mb'}));
 app.set('view engine', 'ejs');
@@ -47,18 +45,56 @@ app.use('/user/', userrouter);
 app.use(async function(req, res, next) {
     res.locals.user = req.user;
     req.user ? res.locals.guilds = await User.findOne({ id: req.user.id }).populate('guilds').guilds : ''
-    console.log(req.guilds)
     next();
   });
-app.get('/users', async (req, res) => {
-    const users = await User.find({});
-    res.json(users)
+
+const users = {};
+const HEARTBEAT_TIMEOUT = 10000;
+
+app.get('/heartbeat/:id', async (req, res) => {
+    var { id } = req.params;
+    try {
+        // Eğer MongoDB'deki kullanıcı ID'si `_id` ise, bunu kullan
+        const user = await User.findOneAndUpdate({ id:id }, { lastHeartbeat: new Date() });
+        console.log('Heartbeat from user:', id);
+        res.send('OK');
+    } catch (error) {
+        console.error('Error updating heartbeat:', error);
+        res.status(500).send('Internal Server Error');
+    }
 });
+
+app.get('/status/:id', async (req, res) => {
+    try {
+        const users = await User.find({});
+        const activeUsers = {};
+    
+        users.forEach(user => {
+          const lastHeartbeat = user.lastHeartbeat;
+          if (Date.now() - new Date(lastHeartbeat).getTime() <= HEARTBEAT_TIMEOUT) {
+            activeUsers[user.id] = 'active';
+          } else {
+            activeUsers[user.id] = 'inactive';
+          }
+        });
+
+        const userStatus = activeUsers[req.params.id];
+        if (userStatus) {
+          res.json({ status: userStatus });
+        } else {
+          res.status(404).send('User not found or inactive');
+        }
+    } catch (error) {
+        console.error('Error fetching user status:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+
 app.get('/', (req,res) => {
     res.render('index')
 })
 io.on('connection', (socket) => {
-    console.log('a user connected');
     socket.broadcast.emit('user-connected', socket.id);
     socket.on('messageCreate', (msg) => {
         console.log(msg)
@@ -80,7 +116,6 @@ io.on('connection', (socket) => {
 
     // Kullanıcı bir kanala katıldığında
     socket.on('joinChannel', ({ channelID, username }) => {
-        console.log(username)
         if (!channels[channelID]) {
           channels[channelID] = { users: [] }; // Eğer kanal yoksa yeni bir kanal oluştur
         }

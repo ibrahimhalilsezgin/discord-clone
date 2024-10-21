@@ -1,0 +1,29 @@
+<div class="relative">
+    <!-- Sağ Üstte Açma Butonu -->
+    <button id="toggle-user-list" class="md:hidden bg-gray-900 text-white p-2 rounded-md fixed top-4 right-4 z-50">
+        <i class="fas fa-users"></i>
+    </button>
+
+    <!-- Kullanıcı Listesi -->
+    <div id="user-list" class="bg-gray-900 md:w-60 w-full p-5 border-l border-gray-700 fixed top-0 right-0 h-full transform translate-x-full transition-transform duration-300 ease-in-out md:translate-x-0">
+        <% guild.members.forEach(x => { %>
+            <div class="user flex items-center mb-2 bg-gray-700 p-2 rounded-md">
+                <div class="user-status w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                <img src="<%- x.profilePhoto %>" alt="<%- x.displayName %>" class="rounded-full h-8 w-8 mr-2">
+                <span><%- x.username %></span>
+            </div>
+        <% }); %>
+    </div>
+</div>
+
+<script>
+    // Kullanıcı listesini açma/kapatma
+    document.getElementById('toggle-user-list').addEventListener('click', function() {
+        var userList = document.getElementById('user-list');
+        if (userList.classList.contains('translate-x-full')) {
+            userList.classList.remove('translate-x-full');
+        } else {
+            userList.classList.add('translate-x-full');
+        }
+    });
+</script>

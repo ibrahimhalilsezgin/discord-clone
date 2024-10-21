@@ -72,15 +72,19 @@
         <!-- Sağ Kullanıcı Listesi -->
         <div id="user-list" class="bg-gray-900 w-60 p-5 border-l border-gray-700">
             <% guild.members.forEach(x => { %>
-                <div class="user">
-                <div class="user-status">
-                    
+                <div class="user" data-id="<%- x.id %>"> <!-- Kullanıcı ID'sini sakla -->
+                    <div class="user-status">
+                        <span class="status"></span> <!-- Kullanıcı durumunu burada göstereceğiz -->
+                    </div>
+                    <img src="<%- x.profilePhoto %>" alt="<%- x.displayName %>" class="rounded-full h-8 w-8">
+                    <span><%- x.username %></span>
                 </div>
-                <img src="<%- x.profilePhoto %>" alt="<%- x.displayName %>" class="rounded-full h-8 w-8">
-                <span><%- x.username %></span>
-            </div>
-
             <% }); %>
+        </div>
+        
+        
+
+        
         <!-- Diğer kullanıcılar buraya eklenebilir -->
     </div>
 </div>
@@ -98,20 +102,79 @@
             align-items: center;
         }
 
-        .user-status {
+        .user-status-online {
             width: 10px;
             height: 10px;
             background-color: #43b581;
             border-radius: 50%;
             margin-right: 10px;
         }
+        .user-status-offline {
+            width: 10px;
+            height: 10px;
+            background-color: #222423;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
 </style>
 <%- include("./layouts/createChannelModal.ejs") %>    
-
+<%- include("./components/heartbeat.ejs") %>
 
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+        
+
 <script>
+    function fetchUserStatus(userElement) {
+        const userId = userElement.getAttribute('data-id');
+
+        fetch(`/status/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const statusElement = userElement.querySelector('.status');
+                const userStatusDiv = userElement.querySelector('.user-status');
+
+                if (data.status) {
+                    if (data.status === 'active') {
+                        userStatusDiv.classList.remove('user-status-offline');
+                        userStatusDiv.classList.add('user-status-online');  // Offline sınıfını kaldır
+                    } else {
+                        userStatusDiv.classList.add('user-status-offline'); // Offline sınıfını ekle
+                        
+                    }
+                } else {
+                    userStatusDiv.classList.remove('user-status-online'); // Offline sınıfını ekle
+                    userStatusDiv.classList.add('user-status-offline'); // Offline sınıfını ekle
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+            });
+    }
+
+    // İlk durum kontrolü ve ardından her 5 saniyede bir kontrol et
+    const userElements = document.querySelectorAll('.user');
+    userElements.forEach(userElement => {
+        fetchUserStatus(userElement); // İlk durumu kontrol et
+        setInterval(() => fetchUserStatus(userElement), 5000); // 5 saniyede bir durumu kontrol et
+    });
+</script>
+<script>
+    
+// Bildirim izni isteme
+window.addEventListener('load', () => {
+    if(!localStorage.getItem('notperm')) {
+        Notification.requestPermission().then((permission) => {
+            if (permission === 'granted') {
+                // İzin verildiyse bildirim göster
+                localStorage.setItem('notperm', true)
+            }
+        });
+        notifyButton.remove();
+    }
+});
+
+// Bildirim gösterme fonksiyonu
     const socket = io()
     
     const user = "<%= JSON.stringify(user) %>".replace(/&#34;/g, '"')  // &#34; yerine " kullan
@@ -128,8 +191,10 @@
     const sendbtn = document.getElementById('send-btn')
 
     window.onload = () => {
-            messages.scrollTop = messages.scrollHeight;
-        };
+        setTimeout(() => {
+            document.getElementById('messages').scrollIntoView({ behavior:"smooth", block:"end" });            
+        }, 2500);    
+    };
     input.addEventListener('keydown', (key) => {
         if(key.key == 'Enter') {
             if(input. value) {
@@ -140,7 +205,7 @@
                     content: input.value
                 });
             input.value = '';
-            messages.scrollTop = messages.scrollHeight;
+            messages.scrollIntoView({ behavior:"smooth", block:"end" });
                 
         }
     } 
@@ -155,11 +220,13 @@
                 content: input.value
             });
             input.value = '';
-            messages.scrollTop = messages.scrollHeight;
+            messages.scrollIntoView({ behavior:"smooth", block:"end" });
         }
     })
 // Mesaj oluşturulduğunda
-socket.on('messageCreate', (msg) => {
+socket.on('messageCreate', (msg) => { 
+    console.log(msg.channel.id === "<%- channel.id %>")
+    if(!msg.channel.id === "<%- channel.id %>") return "";
     const item = document.createElement('li');
     item.innerHTML = `
         <li>
@@ -181,14 +248,16 @@ socket.on('messageCreate', (msg) => {
                       </div>
                       
                 </li>`; // Mesaj içeriğini ayarla
-    messages.appendChild(item); // Mesajı listeye ekle
-    window.scrollTo(0, document.body.scrollHeight); // Sayfanın en altına kaydır
+                messages.appendChild(item); // Mesajı listeye ekle
+                messages.scrollIntoView({ behavior:"smooth", block:"end" });
+                new Notification('<%- guild.name %> ~ <%- channel.name %>', { body:msg.content });
+                console.log(msg.user.id === "<%- user.id %>")
 });
 
 // Sayfa yüklendiğinde
 window.onload = () => {
     const messagesList = document.getElementById('messages');
-
+    messagesList.scrollIntoView({ behavior:"smooth", block:"end" });            
     const messageString = "<%= JSON.stringify(messages) %>".replace(/&#34;/g, '"'); // &#34; yerine " kullan
     
     let messages;
@@ -224,6 +293,7 @@ window.onload = () => {
                 </li>`; // Mesajı yazarın kullanıcı adı ile göster
                 
                 messagesList.appendChild(item); // Listeye ekle
+                messagesList.scrollIntoView({ behavior:"smooth", block:"end" });            
 
     });
     

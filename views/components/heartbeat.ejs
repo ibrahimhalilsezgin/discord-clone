@@ -1,0 +1,7 @@
+<script>
+    setInterval(async function() {
+        await fetch('/heartbeat/<%- user.id %>').then(() => {
+            console.log('Heartbeat Sended You are living.');
+        })
+    },10000)
+</script>
