@@ -1,0 +1,25 @@
+<div id="create-channel-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-black p-6 rounded shadow-lg w-96">
+        <h2 class="text-white mb-4">Kanal Oluştur</h2>
+        <form id="form" action="/channels/createChannel" method="post">
+            <label class="text-white">Kanal Adı gir</label><br>
+            <input type="text" minlength="1" required name="channelName" class="mt-2 p-2 bg-gray-800 text-white border border-gray-600 rounded w-full" placeholder="Kanal Adı"><br><br>
+            <select name="type" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                <option value="0">Text Channel</option>
+                <option value="1">Voice Channel</option>
+            </select>
+            <input type="text" hidden value="<%- guild.id %>" name="guildID">
+            <input type="submit" value="Oluştur" class="mt-2 bg-blue-600 text-white p-2 rounded hover:bg-blue-500 transition duration-300 cursor-pointer">
+            <button type="button" onclick="closeCreateChannelModal()" class="mt-2 w-full text-center text-red-400 hover:text-red-300">İptal</button>
+        </form>
+    </div>
+</div>
+<script>
+    function openCreateChannelModal() {
+        document.getElementById('create-channel-modal').classList.remove('hidden');
+    }
+
+    function closeCreateChannelModal() {
+        document.getElementById('create-channel-modal').classList.add('hidden');
+    }   
+</script>

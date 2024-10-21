@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IboCord</title>
+  <meta name="description" content="Ibocord, discord-clone">
+  <!-- 100% privacy-first analytics -->
+  <script async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+  <noscript><img src="https://queue.simpleanalyticscdn.com/noscript.gif" alt="" referrerpolicy="no-referrer-when-downgrade" /></noscript>
+
+  <!-- Open Graph meta etiketleri (Discord için) -->
+  <meta property="og:title" content="Ibocord">
+  <meta property="og:description" content="Ibocord, discord-clone">
+  <meta property="og:image" content="https://www.örnek.com/ibocord-gorsel.png"> <!-- Görsel URL'sini buraya ekleyin -->
+  <meta property="og:url" content="https://discord.ibrahimhalilsezgin.fun"> <!-- Web sitenizin URL'si -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+  <!-- Navbar -->
+  <header class="bg-gray-800">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="#" class="text-2xl font-bold">Ibocord</a>
+      <nav class="hidden md:block space-x-6">
+        <a href="#" class="text-gray-300 hover:text-white">İndir</a>
+        <a href="#" class="text-gray-300 hover:text-white">Nitro</a>
+        <a href="#" class="text-gray-300 hover:text-white">Güvenlik</a>
+        <a href="#" class="text-gray-300 hover:text-white">Destek</a>
+        <a href="#" class="text-gray-300 hover:text-white">Blog</a>
+        <a href="https://5b39f762-ae3b-4195-9900-6aacf5786694.site.hbuptime.com/" class="text-gray-300 hover:text-white">Durum</a>
+      </nav>
+      <a href="/auth/login" class="bg-indigo-600 px-4 py-2 rounded-full hover:bg-indigo-700">Giriş Yap</a>
+    </div>
+  </header>
+
+  <!-- Hero Bölümü -->
+  <section class="container mx-auto px-4 py-20 text-center">
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">BİR YER HAYAL ET...</h1>
+    <p class="text-lg sm:text-xl lg:text-2xl mb-8">...bir okul kulübüne, bir oyun grubuna veya dünya çapında bir sanat topluluğuna ait olabileceğin bir yer.</p>
+    <div class="space-y-4 sm:space-y-0 sm:space-x-4">
+      <a href="#" class="block sm:inline-block bg-indigo-600 px-6 py-3 rounded-full hover:bg-indigo-700">Windows için indir</a>
+      <a href="#" class="block sm:inline-block bg-gray-700 px-6 py-3 rounded-full hover:bg-gray-800">Ibocord'u tarayıcıda aç</a>
+    </div>
+  </section>
+
+  <!-- Özellikler Bölümü -->
+  <section class="container mx-auto px-4 py-20">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+      <div>
+        <h2 class="text-3xl font-bold mb-4">Yalnızca davetli olan bir yer oluştur</h2>
+        <p class="text-gray-300">Ibocord sunucuları, grup sohbetini tıkamadan paylaşabileceğin, iş birliği yapabileceğin ve sadece günün hakkında konuşabileceğin konu tabanlı kanallar halinde organize edilmiştir.</p>
+      </div>
+      <div>
+        <h2 class="text-3xl font-bold mb-4">Takılmanın kolay olduğu bir yer</h2>
+        <p class="text-gray-300">Boş olduğunda bir ses kanalında yer kap. Sunucundaki arkadaşların seni çevrimiçi görebilir ve aramaya gerek kalmadan anında sohbete katılabilirler.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 py-6">
+    <div class="container mx-auto text-center">
+      <p class="text-gray-400">© 2024 Ibocord - Tüm Hakları Saklıdır</p>
+      <nav class="space-x-6 mt-4">
+        <a href="#" class="text-gray-300 hover:text-white">Hizmet Şartları</a>
+        <a href="#" class="text-gray-300 hover:text-white">Gizlilik Politikası</a>
+        <a href="#" class="text-gray-300 hover:text-white">Çerez Politikası</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- Login yönlendirme -->
+  <script>
+    document.querySelector('a[href="/auth/login"]').addEventListener('click', function(event) {
+      event.preventDefault();
+      window.location.href = '/auth/login';
+    });
+  </script>
+</body>
+</html>

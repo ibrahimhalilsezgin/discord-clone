@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IboCord</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="flex h-screen overflow-hidden bg-gray-800 text-white">
+
+    <!-- Sol Sidebar -->
+<%- include("./layouts/sidebar.ejs") %>
+
+    <div id="main" class="flex flex-grow h-screen flex-col md:flex-row">
+        <!-- Kanal Listesi -->
+        <div id="channel-bar" class="bg-gray-900 w-full md:w-60 p-5">
+            <%- include("./components/left-bottom.ejs") %>
+
+            <h2 class="text-center"><%- guild.name %></h2>
+            <h4 class="text-center"><%- guild.inviteCode ? guild.inviteCode : 'Sunucunun Davet Kodu Yok.' %></h4>
+
+                <label class="text-2xl float-right cursor-pointer" onclick="openCreateChannelModal()" title="Kanal Oluştur">+</label>
+
+            <div class="space-y-2 mt-10">
+                <% channels.forEach(channel => { %> 
+                    <% if(channel.type == 0) { %> 
+                        <div class="channel bg-gray-700 hover:bg-gray-600 rounded-md p-2 cursor-pointer transition duration-200" onclick="location.assign('/channels/<%- guild.id %>/<%- channel.id %>')">
+                            <span class="text-white">✍ <%- channel.name %></span>
+                        </div>                
+                    <% } %> 
+                    <% if(channel.type == 1) { %>
+                        <div class="channel bg-gray-700 hover:bg-gray-600 rounded-md p-2 cursor-pointer transition duration-200" onclick="joinVoiceChannel('<%- channel.id %>')" onmouseover="showVoiceUsers('<%- channel.id %>')">
+                            <span class="text-white">🔉 <%- channel.name %>
+                                <ul id="voiceUsers-<%- channel.id %>"></ul>
+                            </span>
+                        </div>
+                        <audio id="localAudio" autoplay muted></audio>
+                        <audio id="remoteAudio" autoplay></audio>
+                    <% } %>
+                <% }); %> 
+            </div>
+        </div>
+
+        <!-- Chat Alanı -->
+        <div id="chat-area" class="flex flex-col flex-grow bg-gray-800">
+            <div id="chat-header" class="flex items-center bg-gray-900 p-2 border-b border-gray-700"></div>
+            <div id="messages" class="flex-grow p-2 overflow-y-auto"></div>
+            <div id="message-input" class="flex p-2 bg-gray-700">
+                <input id="input-field" type="text" class="flex-grow p-2 bg-gray-800 text-white rounded mr-2 disabled:text-slate-500" placeholder="Bir Kanala Gir" disabled>
+            </div>
+        </div>
+
+        <!-- Sağ Kullanıcı Listesi -->
+        <div id="user-list" class="bg-gray-900 w-full md:w-60 p-5 border-l border-gray-700">
+            <% guild.members.forEach(x => { %>
+                <div class="user">
+                    <div class="user-status"></div>
+                    <span><%- x.username %></span>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+    <audio id="localAudio" autoplay muted></audio>
+    <audio id="remoteAudio" autoplay></audio>
+    <audio id="joinEffect" src="/join.mp3"></audio>
+    <audio id="leaveEffect" src="/leave.mp3"></audio>
+
+<%- include("./layouts/createChannelModal.ejs") %>
+
+</body>
+</html>
+
+<style>
+    .user {
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #40444b;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+    }
+    .user-status {
+        width: 10px;
+        height: 10px;
+        background-color: #43b581;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+</style>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+const socket = io()
+const localAudio = document.getElementById('localAudio');
+const remoteAudio = document.getElementById('remoteAudio');
+const channelIdInput = document.getElementById('channelId');
+const joinEffect = document.getElementById('joinEffect');
+const leaveEffect = document.getElementById('leaveEffect');
+
+let localStream;
+let peerConnection;
+let channelID;
+let showed = 0;
+let muted = false;
+const config = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' } // STUN sunucusu
+    ]
+};
+
+document.getElementById('mute').addEventListener('click', (event) => {
+    if(!localStream) return;
+    if(muted) {
+        localStream.getAudioTracks().forEach(track => track.enabled = true) 
+        document.getElementById('mute').innerHTML = '<i class="fa-solid fa-microphone"></i>'
+        muted = false    
+    } 
+    else {
+        localStream.getAudioTracks().forEach(track => track.enabled = false) 
+        document.getElementById('mute').innerHTML = '<i class="fa-solid fa-microphone-slash"></i>'
+        muted = true
+    }
+    console.log(muted)
+})
+
+document.getElementById('deafen').addEventListener('click', (event) => {
+    if(!localStream) return;
+    if(muted) {
+        document.getElementById('remoteAudio').muted = false
+                document.getElementById('deafen').innerHTML = '<i class="fa-solid fa-headphones"></i>'
+        muted = false    
+    } 
+    else {
+        document.getElementById('remoteAudio').muted = true
+        document.getElementById('deafen').innerHTML = '<i class="fas fa-volume-mute"></i>'
+        muted = true
+    }
+    console.log(muted)
+})
+
+function joinVoiceChannel(id) {
+    channelID = id;
+     // Kullanıcı bilgileri
+    if (channelID) {
+        socket.emit('joinChannel', { channelID, username: "<%- user.username %>" });
+        console.log(`Kanala katıldın: ${channelID}`);
+        console.log()
+        joinEffect.play()
+        let item = document.createElement('li');
+        item.textContent = '<%- user.username %>'; // Kullanıcı adını ekle
+        document.getElementById('voiceUsers-' + channelID).appendChild(item);
+    }
+        // Sunucudan "userJoined" olayı ile yeni kullanıcı bilgisi alındığında
+        socket.on('userJoined', ({ userId, username }) => {
+            console.log(`${username} (${userId}) kanala katıldı.`);
+            
+            // Kullanıcıyı HTML listesine ekleme
+            let item = document.createElement('li');
+            if(username == "<%- user.username %>")  return;
+            item.textContent = username; // Kullanıcı adını ekle
+            document.getElementById('voiceUsers-' + channelID).appendChild(item);
+        });
+    setTimeout(async () => {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localAudio.srcObject = localStream;
+
+        peerConnection = new RTCPeerConnection(config);
+        
+        // Yeni yöntem: addTrack
+        localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+        });
+
+        peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket.emit('ice-candidate', { channelID, candidate: event.candidate });
+            }
+        };
+
+        // Yeni yöntem: ontrack
+        peerConnection.ontrack = (event) => {
+            remoteAudio.srcObject = event.streams[0];
+        };
+
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
+        socket.emit('offer', { channelID, offer });
+    }, 1500);
+}
+function showVoiceUsers(id){
+        socket.emit('getChannel', {guildID: "<%- guild.id %>", channelID: id})
+        console.log("test")
+        
+    }
+// socket.on('getChannelUsers', (users) => {
+//             if(showed > 1) return;
+//             let item = document.createElement('li');
+//             users.channel.users.users.forEach(x => { 
+//                 if(x.username == "<%- user.username %>")  return;    
+//                 item.textContent = x.username; // Kullanıcı adını ekle
+//                 document.getElementById('voiceUsers-' + users.channel.id).appendChild(item);
+//                 showed += 1; 
+//         })
+            
+// })
+
+socket.on('offer', async (data) => {
+    peerConnection = new RTCPeerConnection(config);
+
+    // Yeni yöntem: addTrack
+    localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+    });
+
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            socket.emit('ice-candidate', { channelID, candidate: event.candidate });
+        }
+    };
+
+    // Yeni yöntem: ontrack
+    peerConnection.ontrack = (event) => {
+        remoteAudio.srcObject = event.streams[0];
+    };
+
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+
+    socket.emit('answer', { channelID, answer });
+});
+
+socket.on('answer', async (data) => {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+});
+
+socket.on('ice-candidate', async (data) => {
+    console.log('Received ICE candidate:', data); // Geliştirici notu: Gelen ICE candidate'ı kontrol edin
+
+    try {
+        // data.candidate alanının geçerli bir nesne olduğundan emin olun
+        if (data.candidate) {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else {
+            console.error('Geçersiz ICE candidate alındı:', data);
+        }
+    } catch (e) {
+        console.error('ICE Candidate eklenirken hata: ', e);
+    }
+});
+
+socket.on('userLeft', (user) => {
+    console.log(user);
+    setTimeout(function() {
+        leaveEffect.play();
+    }, 2000)
+})
+
+</script>

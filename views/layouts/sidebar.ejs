@@ -1,0 +1,27 @@
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<div id="sidebar" class="bg-gray-900 w-18 p-4 flex flex-col items-center">
+    <div id="server-list" class="flex flex-col items-center w-full">
+        <!-- Sunucu simgeleri -->
+        <div class="server-icon w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mb-2 cursor-pointer hover:bg-blue-600 transition duration-300" onclick="location.assign('/')">?</div>
+        <% guilds.forEach(guild => { %>
+            <% if(guild.id == 0){} %>
+            <div class="server-icon w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mb-2 cursor-pointer hover:bg-blue-600 transition duration-300" onclick="location.assign('/channels/<%- guild.id %>')"><%- guild.name %></div>
+        <% }); %> 
+        <div class="server-icon w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center mb-2 cursor-pointer hover:bg-blue-600 transition duration-300" onclick="openCreateGuildModal()">+</div>
+    </div>
+</div>
+
+<%- include("./createGuildModal.ejs") %>
+<%- include("./settingsModal.ejs") %>
+<script>
+
+    function openCreateGuildModal() {
+        document.getElementById('create-guild-modal').classList.remove('hidden');
+    }
+
+    function closeCreateGuildModal() {
+        document.getElementById('create-guild-modal').classList.add('hidden');
+    }
+</script>
